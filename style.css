@@ -1,0 +1,268 @@
+/* =========================================
+   CSS ตัวแปร (Variables) สำหรับคุมโทนสี
+   ========================================= */
+:root {
+    --primary-color: #003366; /* สีน้ำเงินเข้มสำหรับ Header */
+    --secondary-color: #0056b3; /* สีน้ำเงินสำหรับปุ่มกด */
+    --accent-color: #ff9800; /* สีส้มสำหรับเน้นจุดสำคัญ */
+    --bg-color: #f4f7f9; /* สีพื้นหลังเว็บไซต์ */
+    --card-bg: #ffffff; /* สีพื้นหลังส่วนเนื้อหา */
+    --text-main: #333333;
+    --text-muted: #666666;
+    --border-color: #dddddd;
+}
+
+/* =========================================
+   Reset & การตั้งค่าพื้นฐาน
+   ========================================= */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Sarabun', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+/* =========================================
+   Header & Navigation (S4: Semantic Tags)
+   ========================================= */
+header {
+    background-color: var(--primary-color);
+    color: var(--card-bg);
+    padding: 1rem 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+}
+
+nav ul li a {
+    color: var(--card-bg);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+nav ul li a:hover {
+    color: var(--accent-color);
+}
+
+/* =========================================
+   Main Layout & Sections
+   ========================================= */
+main {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    display: grid;
+    gap: 2rem;
+}
+
+section {
+    background-color: var(--card-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+section h2 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* =========================================
+   ฟอร์ม (Form & Inputs)
+   ========================================= */
+form {
+    display: grid;
+    gap: 1.2rem;
+    max-width: 600px;
+}
+
+form div {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    color: var(--text-main);
+}
+
+input[type="text"],
+input[type="date"],
+textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.2);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* =========================================
+   ปุ่ม (Buttons)
+   ========================================= */
+button {
+    background-color: var(--secondary-color);
+    color: var(--card-bg);
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+button:hover {
+    background-color: #004494;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+button.btn-update {
+    background-color: var(--accent-color);
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+button.btn-update:hover {
+    background-color: #e68a00;
+}
+
+/* =========================================
+   ตาราง (Table)
+   ========================================= */
+#searchInput {
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: #f8f9fa;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* =========================================
+   สื่อ (Media - Video/Stats)
+   ========================================= */
+#stats-container {
+    background-color: #eef2f5;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    font-weight: bold;
+    color: var(--secondary-color);
+}
+
+video {
+    width: 100%;
+    max-width: 500px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* =========================================
+   Footer
+   ========================================= */
+footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: auto;
+}
+
+/* =========================================
+   Responsive Design (หน้าจอมือถือ)
+   ========================================= */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    table, thead, tbody, th, td, tr {
+        display: block;
+    }
+    
+    th {
+        display: none; /* ซ่อนหัวตารางในมือถือ */
+    }
+    
+    tr {
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+    }
+    
+    td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+    }
+    
+    td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 1rem;
+        width: 45%;
+        text-align: left;
+        font-weight: bold;
+    }
+}

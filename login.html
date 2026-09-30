@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - ระบบแจ้งซ่อม</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-container {
+            max-width: 420px;
+            margin: 10vh auto;
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: border-top 0.3s ease;
+            border-top: 5px solid var(--secondary-color);
+        }
+        .login-container h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            border-bottom: none;
+        }
+        /* ดีไซน์ปุ่มสลับโหมด (Tabs) */
+        .role-selector {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .role-selector button {
+            flex: 1;
+            background-color: transparent;
+            color: var(--text-main);
+            border-radius: 0;
+            padding: 0.6rem;
+            font-size: 0.95rem;
+        }
+        .role-selector button.active {
+            background-color: var(--secondary-color);
+            color: white;
+            pointer-events: none;
+        }
+        .role-selector button#btnAdmin.active {
+            background-color: #dc3545; /* สีแดงสำหรับแท็บแอดมิน */
+        }
+        #errorMsg { color: red; text-align: center; margin-top: 1rem; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ระบบแจ้งซ่อมคอมพิวเตอร์</h1>
+    </header>
+    
+    <main>
+        <div class="login-container" id="loginBox">
+            <h2 id="loginTitle">เข้าสู่ระบบ (ผู้ใช้ทั่วไป)</h2>
+            
+            <!-- ส่วนเลือกโหมดล็อคอิน -->
+            <div class="role-selector">
+                <button type="button" id="btnUser" class="active">ผู้ใช้งานทั่วไป</button>
+                <button type="button" id="btnAdmin">ผู้ดูแลระบบ</button>
+            </div>
+
+            <form id="loginForm">
+                <div>
+                    <label for="username">ชื่อผู้ใช้งาน:</label>
+                    <input type="text" id="username" required placeholder="กรอกชื่อผู้ใช้งาน">
+                </div>
+                <div>
+                    <label for="password">รหัสผ่าน:</label>
+                    <input type="password" id="password" required placeholder="กรอกรหัสผ่าน">
+                </div>
+                <button type="submit" id="submitBtn" style="width: 100%; margin-top: 1rem;">ล็อคอิน</button>
+            </form>
+            <p id="errorMsg"></p>
+        </div>
+    </main>
+    <script src="login.js"></script>
+</body>
+</html>

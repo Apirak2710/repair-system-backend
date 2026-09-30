@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - แผงควบคุมระบบแจ้งซ่อม</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-header {
+            background-color: #343a40; /* สีเทาเข้มแบบโปรแกรมเมอร์ */
+        }
+        .logout-btn {
+            background-color: #dc3545;
+            padding: 0.5rem 1rem;
+        }
+        .logout-btn:hover { background-color: #c82333; }
+        
+        .status-select {
+            padding: 0.4rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-family: 'Sarabun', sans-serif;
+        }
+        .save-btn {
+            background-color: #28a745; /* ปุ่มสีเขียวสำหรับเซฟ */
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        .save-btn:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <h1>🔧 แผงควบคุมผู้ดูแลระบบ (Admin)</h1>
+        <nav>
+            <ul>
+                <li><button class="logout-btn" onclick="logout()">ออกจากระบบ</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="admin-tickets">
+            <div id="dashboard-stats" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+    <!-- นี่คือส่วน Dashboard แสดงตัวเลขสรุป -->
+    <div style="padding: 1rem; background: #e9ecef; border-radius: 5px;">แจ้งซ่อมทั้งหมด: <b id="statTotal">0</b></div>
+    <div style="padding: 1rem; background: #fff3cd; border-radius: 5px;">รอดำเนินการ: <b id="statPending">0</b></div>
+</div>
+<!-- ช่องค้นหาเพื่อทดสอบระบบ Debounce -->
+<input type="text" id="searchInput" placeholder="พิมพ์ค้นหารหัสอุปกรณ์..." style="margin-bottom: 1rem; padding: 0.5rem; width: 100%;">
+            <h2>จัดการรายการแจ้งซ่อมทั้งหมด</h2>
+            
+            <table id="adminTicketTable">
+                <thead>
+                    <tr>
+                        <th>รหัสอุปกรณ์</th>
+                        <th>ผู้แจ้ง</th>
+                        <th>ปัญหาที่พบ</th>
+                        <th>วันที่แจ้ง</th>
+                        <th>อัปเดตสถานะ</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- JavaScript จะดึงข้อมูลจากฐานข้อมูลมาเรียงตรงนี้ -->
+                    <tr><td colspan="6" style="text-align:center;">กำลังโหลดข้อมูล...</td></tr>
+                </tbody>
+            </table>
+        </section>
+        <main>
+        <!-- (โค้ด section ตารางแจ้งซ่อมเดิมของคุณอยู่ตรงนี้) -->
+        <section id="admin-tickets">
+            ...
+        </section>
+
+        <!-- ========================================== -->
+        <!-- ส่วนที่เพิ่มใหม่: ฟอร์มจัดการเพิ่มผู้ใช้งาน -->
+        <!-- ========================================== -->
+        <section id="manage-users" style="margin-top: 2rem;">
+            <h2>👥 เพิ่มผู้ใช้งานใหม่เข้าสู่ระบบ</h2>
+            <form id="addUserForm" style="background-color: #f8f9fa; padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div>
+                        <label for="newUsername">ชื่อผู้ใช้งาน (Username):</label>
+                        <input type="text" id="newUsername" required placeholder="ตั้งชื่อผู้ใช้">
+                    </div>
+                    <div>
+                        <label for="newPassword">รหัสผ่าน (Password):</label>
+                        <input type="text" id="newPassword" required placeholder="ตั้งรหัสผ่าน">
+                    </div>
+                    <div>
+                        <label for="newRole">สิทธิ์การเข้าถึง:</label>
+                        <select id="newRole" required style="width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <option value="user">ผู้ใช้งานทั่วไป (แจ้งซ่อม)</option>
+                            <option value="technician">ช่างซ่อม (Technician)</option>
+                            <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" style="margin-top: 1.5rem; background-color: #007bff; width: 100%;">+ สร้างบัญชีผู้ใช้งาน</button>
+                <p id="addUserMsg" style="text-align: center; margin-top: 1rem; font-weight: bold;"></p>
+            </form>
+        </section>
+    </main>
+    </main>
+
+    <script src="admin_dashboard.js"></script>
+</body>
+</html>

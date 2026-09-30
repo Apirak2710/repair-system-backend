@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแจ้งซ่อมอุปกรณ์คอมพิวเตอร์ คณะครุศาสตร์อุตสาหกรรมคอมพิวเตอร์</title>
+    
+    <!-- ดึงฟอนต์ Sarabun จาก Google Fonts เพื่อให้อ่านง่ายและเป็นทางการ -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- S4: ใช้ Semantic Tags -->
+    <header>
+        <h1>ระบบแจ้งซ่อมคอมพิวเตอร์</h1>
+        <nav>
+            <ul>
+                <li><a href="#dashboard">Dashboard</a></li>
+                <li><a href="#tickets">รายการแจ้งซ่อม</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="dashboard">
+            <h2>สรุปสถิติการแจ้งซ่อม</h2>
+            <!-- S3: หน้า Dashboard MIS -->
+            <div id="stats-container">กำลังโหลดสถิติ...</div>
+            
+            <!-- S4: Rich Media (Video ตัวอย่างการแก้ไขเบื้องต้น) -->
+            <video width="320" height="240" controls>
+                <source src="howto-basic-fix.mp4" type="video/mp4">
+                เบราว์เซอร์ของคุณไม่รองรับวิดีโอนี้
+            </video>
+        </section>
+
+        <section id="create-ticket">
+            <h2>ฟอร์มแจ้งซ่อม</h2>
+            <!-- S4: Form label ผูกกับ id, ใช้ input type ที่เหมาะสม -->
+            <form id="ticketForm">
+                <div>
+                    <label for="eqCode">รหัสอุปกรณ์:</label>
+                    <input type="text" id="eqCode" name="eqCode" required>
+                </div>
+                <div>
+                    <label for="reportDate">วันที่แจ้ง:</label>
+                    <input type="date" id="reportDate" name="reportDate" required>
+                </div>
+                <div>
+                    <label for="issue">ปัญหาที่พบ:</label>
+                    <textarea id="issue" name="issue" required></textarea>
+                </div>
+                <button type="submit">ส่งแจ้งซ่อม</button>
+            </form>
+        </section>
+
+        <section id="tickets">
+            <h2>รายการแจ้งซ่อมทั้งหมด</h2>
+            <!-- S5: ช่องค้นหาเตรียมใช้ Debounce -->
+            <label for="searchInput">ค้นหาใบแจ้งซ่อม:</label>
+            <input type="text" id="searchInput" placeholder="พิมพ์ชื่ออุปกรณ์...">
+            
+            <!-- S5: ตารางเตรียมทำ Event Delegation -->
+            <table id="ticketTable">
+                <thead>
+                    <tr><th>รหัสอุปกรณ์</th><th>สถานะ</th><th>จัดการ</th></tr>
+                </thead>
+                <tbody>
+                    <!-- JS จะใส่ข้อมูลที่นี่ -->
+                    <tr data-id="1">
+                        <!-- เพิ่ม data-label เพื่อให้การแสดงผลบนจอมือถือ (Responsive) สมบูรณ์ -->
+                        <td data-label="รหัสอุปกรณ์">PC-001</td>
+                        <td data-label="สถานะ">รอซ่อม</td>
+                        <td data-label="จัดการ"><button class="btn-update">อัปเดตสถานะ</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 คณะครุศาสตร์อุตสาหกรรมคอมพิวเตอร์</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
