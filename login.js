@@ -42,7 +42,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     errorMsg.innerText = 'กำลังตรวจสอบข้อมูล...';
 
     try {
-        const response = await fetch('http://localhost:3000/api/login', {
+        // แก้ไข URL ให้เป็น String แบบปกติ ไม่มีวงเล็บปะปน
+        const response = await fetch('https://repair-system-backend-o7wo.onrender.com/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })

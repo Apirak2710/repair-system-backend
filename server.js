@@ -17,9 +17,10 @@ const SECRET_KEY = 'my_super_secret_key_123'; // คีย์ลับสำห�
 app.post('/api/register', async (req, res) => {
     const { username, password, role } = req.body;
     try {
-        // เข้ารหัสผ่านก่อนบันทึกลงฐานข้อมูล (ห้ามเก็บรหัสผ่านเป็นตัวอักษรธรรมดา)
+        // เข้ารหัสผ่านก่อนบันทึกลงฐานข้อมูล
         const hashedPassword = await bcrypt.hash(password, 10);
-        const sql = `INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)`;
+        // แก้ไข: เปลี่ยน password_hash เป็น password ให้ตรงกับฐานข้อมูล
+        const sql = `INSERT INTO users (username, password, role) VALUES (?, ?, ?)`;
         await db.execute(sql, [username, hashedPassword, role || 'user']);
         res.status(201).json({ message: 'สร้างผู้ใช้สำเร็จ' });
     } catch (error) {
@@ -41,7 +42,8 @@ app.post('/api/login', async (req, res) => {
         const user = users[0];
 
         // 2. เทียบรหัสผ่านที่กรอกมา กับรหัสที่เข้ารหัสไว้ในฐานข้อมูล
-        const match = await bcrypt.compare(password, user.password_hash);
+        // แก้ไข: เปลี่ยน user.password_hash เป็น user.password
+        const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
 
         // 3. สร้างตั๋วผ่านทาง (Token)
@@ -74,12 +76,13 @@ app.get('/api/tickets', async (req, res) => {
         res.status(500).json({ error: 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์' });
     }
 });
+
 // ==========================================
 // API สำหรับอัปเดตสถานะใบแจ้งซ่อม (PUT Request)
 // ==========================================
 app.put('/api/tickets/:id/status', async (req, res) => {
-    const ticketId = req.params.id; // ดึง ID จาก URL
-    const { status } = req.body;    // ดึงสถานะใหม่ที่ส่งมาจากหน้าเว็บ
+    const ticketId = req.params.id; 
+    const { status } = req.body;    
 
     try {
         const sql = `UPDATE repair_tickets SET status = ? WHERE id = ?`;
@@ -90,27 +93,24 @@ app.put('/api/tickets/:id/status', async (req, res) => {
         res.status(500).json({ error: 'ไม่สามารถอัปเดตฐานข้อมูลได้' });
     }
 });
+
 // ==========================================
 // API สำหรับสร้างใบแจ้งซ่อมใหม่ (POST Request)
 // ==========================================
 app.post('/api/tickets', async (req, res) => {
-    // รับข้อมูลรหัสอุปกรณ์, ปัญหา, และ ID ของผู้แจ้ง จากหน้าเว็บ
     const { equipment_code, issue_description, user_id } = req.body;
     
     try {
-        // 1. เช็คก่อนว่ามีรหัสอุปกรณ์นี้ในฐานข้อมูล (ตาราง equipments) หรือยัง
         let [equipments] = await db.execute('SELECT id FROM equipments WHERE equipment_code = ?', [equipment_code]);
         let equipment_id;
         
         if (equipments.length === 0) {
-            // ถ้ายังไม่มีอุปกรณ์นี้ ให้ระบบสร้างประวัติอุปกรณ์ใหม่ให้ชั่วคราว
             const [newEq] = await db.execute('INSERT INTO equipments (equipment_code, name) VALUES (?, ?)', [equipment_code, 'อุปกรณ์ใหม่ (เพิ่มจากหน้าแจ้งซ่อม)']);
-            equipment_id = newEq.insertId; // ดึง ID ที่เพิ่งสร้างมาใช้
+            equipment_id = newEq.insertId; 
         } else {
-            equipment_id = equipments[0].id; // ถ้ามีอยู่แล้วให้ใช้ ID เดิม
+            equipment_id = equipments[0].id; 
         }
 
-        // 2. บันทึกใบแจ้งซ่อมลงตาราง repair_tickets
         const sql = `INSERT INTO repair_tickets (user_id, equipment_id, issue_description, status) VALUES (?, ?, ?, 'pending')`;
         await db.execute(sql, [user_id, equipment_id, issue_description]);
         
@@ -120,6 +120,7 @@ app.post('/api/tickets', async (req, res) => {
         res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' });
     }
 });
+
 // 1. API ดึงข้อมูลสถิติ (สำหรับ Dashboard) - GET
 app.get('/api/dashboard/stats', async (req, res) => {
     try {

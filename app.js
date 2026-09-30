@@ -1,5 +1,5 @@
-// กำหนดที่อยู่ของ API ที่เราเพิ่งสร้างรันไว้
-const API_URL = 'http://localhost:3000/api/tickets';
+// กำหนดที่อยู่ของ API ที่เราเพิ่งสร้างรันไว้บน Render
+const API_URL = 'https://repair-system-backend-o7wo.onrender.com/api/tickets';
 
 // 1. ฟังก์ชันดึงข้อมูลจาก Backend มาแสดง (Fetch API)
 async function fetchTickets() {
@@ -123,8 +123,8 @@ document.getElementById('ticketForm').addEventListener('submit', async (e) => {
     const userId = payload.id;
 
     try {
-        // ส่งข้อมูลข้ามไปให้ Backend บันทึกลง MySQL
-        const response = await fetch('http://localhost:3000/api/tickets', {
+        // ส่งข้อมูลข้ามไปให้ Backend บันทึกลง MySQL บนคลาวด์
+        const response = await fetch('https://repair-system-backend-o7wo.onrender.com/api/tickets', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -148,13 +148,14 @@ document.getElementById('ticketForm').addEventListener('submit', async (e) => {
         alert('❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
     }
 });
+
 // ==========================================
 // ฟังก์ชันดึงข้อมูลจากฐานข้อมูลมาแสดงในตารางผู้ใช้
 // ==========================================
-async function fetchTickets() {
+async function fetchTicketsAPI() {
     try {
-        // ยิงคำสั่งไปดึงรายการแจ้งซ่อมทั้งหมดจาก Backend
-        const response = await fetch('http://localhost:3000/api/tickets');
+        // ยิงคำสั่งไปดึงรายการแจ้งซ่อมทั้งหมดจาก Backend บนคลาวด์
+        const response = await fetch('https://repair-system-backend-o7wo.onrender.com/api/tickets');
         const tickets = await response.json();
         
         // หาตัวตารางบนหน้าเว็บ (อ้างอิงจาก tbody)
@@ -195,4 +196,4 @@ async function fetchTickets() {
 }
 
 // สั่งให้ตารางโหลดข้อมูลจริงทันทีเมื่อผู้ใช้เข้ามาที่หน้านี้
-fetchTickets();
+fetchTicketsAPI();

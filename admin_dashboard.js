@@ -11,7 +11,7 @@ if (!token || (userRole !== 'admin' && userRole !== 'technician')) {
 // 2. ฟังก์ชันดึงข้อมูลมาแสดงในตาราง
 async function fetchAdminTickets() {
     try {
-        const response = await fetch('http://localhost:3000/api/tickets');
+        const response = await fetch('https://repair-system-backend-o7wo.onrender.com/api/tickets');
         if (!response.ok) throw new Error('ดึงข้อมูลไม่ได้');
         
         const tickets = await response.json();
@@ -58,7 +58,7 @@ async function updateTicketStatus(ticketId) {
     const newStatus = document.getElementById(`status-${ticketId}`).value;
 
     try {
-        const response = await fetch(`http://localhost:3000/api/tickets/${ticketId}/status`, {
+        const response = await fetch(`https://repair-system-backend-o7wo.onrender.com/api/tickets/${ticketId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: newStatus })
@@ -84,6 +84,7 @@ function logout() {
 
 // สั่งให้โหลดตารางทันทีเมื่อเข้าหน้านี้
 fetchAdminTickets();
+
 // ==========================================
 // ระบบเพิ่มผู้ใช้งานใหม่โดย Admin
 // ==========================================
@@ -99,8 +100,8 @@ document.getElementById('addUserForm').addEventListener('submit', async (e) => {
     msgObj.innerText = 'กำลังบันทึกข้อมูลเข้าฐานข้อมูล...';
 
     try {
-        // ยิงข้อมูลไปที่ API สร้างผู้ใช้ที่เรามีอยู่แล้ว
-        const response = await fetch('http://localhost:3000/api/register', {
+        // ยิงข้อมูลไปที่ API สร้างผู้ใช้ที่เรามีอยู่แล้วบนคลาวด์
+        const response = await fetch('https://repair-system-backend-o7wo.onrender.com/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password, role })
@@ -125,11 +126,12 @@ document.getElementById('addUserForm').addEventListener('submit', async (e) => {
         msgObj.innerText = '❌ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
     }
 });
+
 // =========================================================
 // 1. ระบบ Dashboard Stats (ดึงสถิติมาแสดง)
 // =========================================================
 async function loadStats() {
-    const res = await fetch('http://localhost:3000/api/dashboard/stats');
+    const res = await fetch('https://repair-system-backend-o7wo.onrender.com/api/dashboard/stats');
     const data = await res.json();
     document.getElementById('statTotal').innerText = data.total;
     document.getElementById('statPending').innerText = data.pending;
@@ -160,7 +162,7 @@ document.getElementById('adminTicketTable').addEventListener('click', async (e) 
     if (e.target.classList.contains('delete-btn')) {
         const ticketId = e.target.getAttribute('data-id');
         if (confirm('คุณแน่ใจหรือไม่ที่จะลบรายการนี้?')) {
-            await fetch(`http://localhost:3000/api/tickets/${ticketId}`, { method: 'DELETE' });
+            await fetch(`https://repair-system-backend-o7wo.onrender.com/api/tickets/${ticketId}`, { method: 'DELETE' });
             alert('ลบข้อมูลสำเร็จ');
             fetchAdminTickets(); // โหลดตารางใหม่
             loadStats(); // โหลดสถิติใหม่
