@@ -50,14 +50,13 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
-// 3. API สถิติการแจ้งซ่อม (ดึงสถิติตัวเลข Dashboard)
-// (รองรับทั้ง /api/tickets/stats และ /api/dashboard/stats)
+// 3. API สถิติการแจ้งซ่อม (ดึงจากตาราง repairs)
 // ==========================================
 const getStatsHandler = async (req, res) => {
     try {
-        const [total] = await db.execute('SELECT COUNT(*) as count FROM repair_tickets');
-        const [pending] = await db.execute('SELECT COUNT(*) as count FROM repair_tickets WHERE status = "pending"');
-        const [completed] = await db.execute('SELECT COUNT(*) as count FROM repair_tickets WHERE status = "completed"');
+        const [total] = await db.execute('SELECT COUNT(*) as count FROM repairs');
+        const [pending] = await db.execute('SELECT COUNT(*) as count FROM repairs WHERE status = "pending"');
+        const [completed] = await db.execute('SELECT COUNT(*) as count FROM repairs WHERE status = "completed"');
         
         res.json({ 
             total: total[0].count || 0, 
@@ -74,18 +73,20 @@ app.get('/api/tickets/stats', getStatsHandler);
 app.get('/api/dashboard/stats', getStatsHandler);
 
 // ==========================================
-// 4. API ดึงรายการใบแจ้งซ่อมทั้งหมด
-// (รองรับทั้ง /api/tickets และ /api/repairs)
+// 4. API ดึงรายการใบแจ้งซ่อมทั้งหมด (ดึงจากตาราง repairs)
 // ==========================================
 const getTicketsHandler = async (req, res) => {
     try {
         const sql = `
-            SELECT t.id, t.issue_description, t.status, t.created_at, 
-                   u.username AS reporter, e.equipment_code 
-            FROM repair_tickets t
-            LEFT JOIN users u ON t.user_id = u.id
-            LEFT JOIN equipments e ON t.equipment_id = e.id
-            ORDER BY t.created_at DESC
+            SELECT r.id, 
+                   COALESCE(r.description, r.issue_description) AS issue_description, 
+                   r.status, 
+                   r.created_at, 
+                   u.username AS reporter, 
+                   COALESCE(r.device_name, r.equipment_code) AS equipment_code 
+            FROM repairs r
+            LEFT JOIN users u ON r.user_id = u.id
+            ORDER BY r.id DESC
         `;
         const [rows] = await db.execute(sql);
         res.json(rows);
@@ -99,28 +100,21 @@ app.get('/api/tickets', getTicketsHandler);
 app.get('/api/repairs', getTicketsHandler);
 
 // ==========================================
-// 5. API สร้างใบแจ้งซ่อมใหม่ (POST Request)
+// 5. API สร้างใบแจ้งซ่อมใหม่ (บันทึกลงตาราง repairs)
 // ==========================================
 const createTicketHandler = async (req, res) => {
-    const { equipment_code, issue_description, user_id = null } = req.body;
+    const { equipment_code, device_name, issue_description, description, user_id = null } = req.body;
     
-    if (!equipment_code || !issue_description) {
+    const device = equipment_code || device_name;
+    const desc = issue_description || description;
+
+    if (!device || !desc) {
         return res.status(400).json({ error: 'กรุณากรอกรหัสอุปกรณ์และรายละเอียดปัญหาให้ครบถ้วน' });
     }
 
     try {
-        let [equipments] = await db.execute('SELECT id FROM equipments WHERE equipment_code = ?', [equipment_code]);
-        let equipment_id;
-        
-        if (equipments.length === 0) {
-            const [newEq] = await db.execute('INSERT INTO equipments (equipment_code, name) VALUES (?, ?)', [equipment_code, 'อุปกรณ์ใหม่ (เพิ่มจากหน้าแจ้งซ่อม)']);
-            equipment_id = newEq.insertId; 
-        } else {
-            equipment_id = equipments[0].id; 
-        }
-
-        const sql = `INSERT INTO repair_tickets (user_id, equipment_id, issue_description, status) VALUES (?, ?, ?, 'pending')`;
-        await db.execute(sql, [user_id, equipment_id, issue_description]);
+        const sql = `INSERT INTO repairs (user_id, device_name, description, status) VALUES (?, ?, ?, 'pending')`;
+        await db.execute(sql, [user_id, device, desc]);
         
         res.status(201).json({ message: 'บันทึกข้อมูลแจ้งซ่อมสำเร็จ' });
     } catch (error) {
@@ -133,14 +127,14 @@ app.post('/api/tickets', createTicketHandler);
 app.post('/api/repairs', createTicketHandler);
 
 // ==========================================
-// 6. API อัปเดตสถานะใบแจ้งซ่อม (PUT Request)
+// 6. API อัปเดตสถานะใบแจ้งซ่อม (UPDATE ตาราง repairs)
 // ==========================================
 app.put('/api/tickets/:id/status', async (req, res) => {
     const ticketId = req.params.id; 
     const { status } = req.body;    
 
     try {
-        const sql = `UPDATE repair_tickets SET status = ? WHERE id = ?`;
+        const sql = `UPDATE repairs SET status = ? WHERE id = ?`;
         await db.execute(sql, [status, ticketId]);
         res.json({ message: 'อัปเดตสถานะสำเร็จ' });
     } catch (error) {
@@ -150,11 +144,11 @@ app.put('/api/tickets/:id/status', async (req, res) => {
 });
 
 // ==========================================
-// 7. API ลบใบแจ้งซ่อม (DELETE Request)
+// 7. API ลบใบแจ้งซ่อม (DELETE จากตาราง repairs)
 // ==========================================
 app.delete('/api/tickets/:id', async (req, res) => {
     try {
-        await db.execute('DELETE FROM repair_tickets WHERE id = ?', [req.params.id]);
+        await db.execute('DELETE FROM repairs WHERE id = ?', [req.params.id]);
         res.json({ message: 'ลบข้อมูลสำเร็จ' });
     } catch (err) { 
         console.error('Delete Ticket Error:', err);
