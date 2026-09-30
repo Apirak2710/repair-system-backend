@@ -33,11 +33,6 @@
         <section id="dashboard">
             <h2>สรุปสถิติการแจ้งซ่อม</h2>
             <div id="stats-container">กำลังโหลดสถิติ...</div>
-            
-            <video width="320" height="240" controls>
-                <source src="howto-basic-fix.mp4" type="video/mp4">
-                เบราว์เซอร์ของคุณไม่รองรับวิดีโอนี้
-            </video>
         </section>
 
         <section id="create-ticket">
@@ -54,6 +49,10 @@
                 <div>
                     <label for="issue">ปัญหาที่พบ:</label>
                     <textarea id="issue" name="issue" required></textarea>
+                </div>
+                <div>
+                    <label for="image">แนบรูปภาพประกอบ:</label>
+                    <input type="file" id="image" name="image" accept="image/*">
                 </div>
                 <button type="submit">ส่งแจ้งซ่อม</button>
             </form>

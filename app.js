@@ -1,8 +1,8 @@
-// กำหนดที่อยู่ของ API บน Render (ใช้ลิงก์กลางตัวเดียวกัน)
-const API_URL = 'https://repair-system-backend-o7wo.onrender.com/api/tickets';
+// 1. กำหนด URL หลักของ Backend บน Render (เปลี่ยนชื่อโดเมนให้ตรงกับ Web Service บน Render ของคุณ)
+const BASE_URL = 'https://repair-system-backend.onrender.com/api';
 
 // ==========================================
-// ระบบความปลอดภัย (ดักไม่ให้คนไม่ได้ล็อคอินเข้ามาใช้)
+// ระบบความปลอดภัย (เช็ค Token)
 // ==========================================
 const token = localStorage.getItem('token');
 if (!token) {
@@ -11,11 +11,45 @@ if (!token) {
 }
 
 // ==========================================
-// 1. ฟังก์ชันหลักสำหรับดึงข้อมูลและแสดงผลตาราง
+// 1. ฟังก์ชันดึงสถิติตัวเลข Dashboard
+// ==========================================
+async function fetchStats() {
+    const statsContainer = document.getElementById('stats-container');
+    if (!statsContainer) return;
+
+    try {
+        const response = await fetch(`${BASE_URL}/tickets/stats`);
+        if (!response.ok) throw new Error('ไม่สามารถดึงสถิติได้');
+        
+        const data = await response.json();
+        statsContainer.innerHTML = `
+            <div style="display: flex; gap: 15px; margin-top: 10px;">
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                    <h3 style="margin:0; color:#0d47a1;">รายการทั้งหมด</h3>
+                    <p style="font-size: 24px; font-weight: bold; margin: 5px 0 0 0;">${data.total || 0}</p>
+                </div>
+                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                    <h3 style="margin:0; color:#e65100;">รอดำเนินการ</h3>
+                    <p style="font-size: 24px; font-weight: bold; margin: 5px 0 0 0;">${data.pending || 0}</p>
+                </div>
+                <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                    <h3 style="margin:0; color:#1b5e20;">เสร็จสิ้น</h3>
+                    <p style="font-size: 24px; font-weight: bold; margin: 5px 0 0 0;">${data.completed || 0}</p>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Fetch Stats Error:', error);
+        statsContainer.innerText = 'ไม่สามารถดึงข้อมูลสถิติได้';
+    }
+}
+
+// ==========================================
+// 2. ฟังก์ชันหลักสำหรับดึงข้อมูลและแสดงผลตาราง
 // ==========================================
 async function fetchTickets() {
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch(`${BASE_URL}/tickets`);
         
         if (!response.ok) {
             const errorData = await response.json();
@@ -23,18 +57,10 @@ async function fetchTickets() {
         }
         
         const tickets = await response.json();
-        
-        // เช็คว่าในหน้าเว็บมีตารางแบบไหน (รองรับทั้งหน้าแอดมินและหน้าผู้ใช้ทั่วไป)
         renderTable(tickets);
-        
-        // อัปเดตข้อความสถิติถ้ามี element นี้อยู่
-        const statsContainer = document.getElementById('stats-container');
-        if (statsContainer) {
-            statsContainer.innerText = `มีรายการแจ้งซ่อมในระบบทั้งหมด ${tickets.length} รายการ`;
-        }
 
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Fetch Tickets Error:', error);
         const tbody = document.querySelector('#ticketTable tbody') || document.querySelector('table tbody');
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:red;">${error.message}</td></tr>`;
@@ -43,7 +69,7 @@ async function fetchTickets() {
 }
 
 // ==========================================
-// 2. ฟังก์ชันวาดตาราง HTML (รองรับทุกหน้าจอ)
+// 3. ฟังก์ชันวาดตาราง HTML
 // ==========================================
 function renderTable(tickets) {
     const tbody = document.querySelector('#ticketTable tbody') || document.querySelector('table tbody');
@@ -51,7 +77,7 @@ function renderTable(tickets) {
 
     tbody.innerHTML = ''; 
 
-    if (tickets.length === 0) {
+    if (!Array.isArray(tickets) || tickets.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">ยังไม่มีรายการแจ้งซ่อม</td></tr>';
         return;
     }
@@ -61,14 +87,13 @@ function renderTable(tickets) {
         let statusColor = 'black';
         
         if (ticket.status === 'pending') { statusText = 'รอดำเนินการ'; statusColor = '#ff9800'; }
-        else if (ticket.status === 'in_progress') { statusText = 'กำลังซ่อม'; statusColor = '#2196f3'; }
-        else if (ticket.status === 'resolved') { statusText = 'ซ่อมเสร็จสิ้น'; statusColor = '#4caf50'; }
+        else if (ticket.status === 'in_progress' || ticket.status === 'in-progress') { statusText = 'กำลังซ่อม'; statusColor = '#2196f3'; }
+        else if (ticket.status === 'completed' || ticket.status === 'resolved') { statusText = 'ซ่อมเสร็จสิ้น'; statusColor = '#4caf50'; }
         else if (ticket.status === 'cancelled') { statusText = 'ยกเลิก'; statusColor = '#f44336'; }
 
         const tr = document.createElement('tr');
         if (ticket.id) tr.dataset.id = ticket.id;
 
-        // ตรวจสอบว่ามีปุ่มจัดการหรือเป็นมุมมองผู้ใช้ทั่วไป
         tr.innerHTML = `
             <td data-label="รหัสอุปกรณ์"><b>${ticket.equipment_code || 'ไม่ระบุ'}</b></td>
             <td data-label="สถานะ" style="color: ${statusColor}; font-weight: bold;">${statusText}</td>
@@ -79,7 +104,7 @@ function renderTable(tickets) {
 }
 
 // ==========================================
-// 3. ระบบ Debounce สำหรับช่องค้นหา
+// 4. ระบบค้นหา (Search)
 // ==========================================
 function debounce(func, delay) {
     let timeoutId;
@@ -109,21 +134,7 @@ if (searchInput) {
 }
 
 // ==========================================
-// 4. ระบบ Event Delegation สำหรับปุ่มกดในตาราง
-// ==========================================
-const ticketTable = document.getElementById('ticketTable');
-if (ticketTable) {
-    ticketTable.addEventListener('click', (event) => {
-        if (event.target.classList.contains('btn-update')) {
-            const row = event.target.closest('tr');
-            const ticketId = row.dataset.id;
-            alert(`คุณกำลังจะจัดการใบแจ้งซ่อมรหัส (Ticket ID): ${ticketId}`);
-        }
-    });
-}
-
-// ==========================================
-// ฟังก์ชันเมื่อผู้ใช้กดปุ่ม "ส่งแจ้งซ่อม"
+// 5. ฟังก์ชันเมื่อผู้ใช้กดปุ่ม "ส่งแจ้งซ่อม"
 // ==========================================
 const ticketForm = document.getElementById('ticketForm');
 if (ticketForm) {
@@ -133,7 +144,7 @@ if (ticketForm) {
         const eqCode = document.getElementById('eqCode').value;
         const issue = document.getElementById('issue').value;
         
-        let userId = 1; // ค่าสำรองเผื่อกรณีแกะ Token ไม่สำเร็จ
+        let userId = 1;
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
             userId = payload.id;
@@ -142,7 +153,7 @@ if (ticketForm) {
         }
 
         try {
-            const response = await fetch(API_URL, {
+            const response = await fetch(`${BASE_URL}/tickets`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -157,7 +168,8 @@ if (ticketForm) {
             if (response.ok) {
                 alert('✅ ส่งข้อมูลแจ้งซ่อมสำเร็จ ระบบได้รับเรื่องแล้ว!');
                 ticketForm.reset(); 
-                fetchTickets(); // โหลดตารางใหม่ทันที
+                fetchStats();
+                fetchTickets();
             } else {
                 alert('❌ เกิดข้อผิดพลาด: ' + data.error);
             }
@@ -169,4 +181,7 @@ if (ticketForm) {
 }
 
 // เริ่มต้นทำงานทันทีที่โหลดหน้าเว็บเสร็จ
-document.addEventListener('DOMContentLoaded', fetchTickets);
+document.addEventListener('DOMContentLoaded', () => {
+    fetchStats();
+    fetchTickets();
+});
