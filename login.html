@@ -3,81 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เข้าสู่ระบบ - ระบบแจ้งซ่อม</title>
+    <title>เข้าสู่ระบบ - ระบบแจ้งซ่อมคอมพิวเตอร์</title>
+    
+    <!-- ดึงฟอนต์ Sarabun จาก Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+
     <style>
-        .login-container {
-            max-width: 420px;
-            margin: 10vh auto;
-            background: var(--card-bg);
-            padding: 2.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transition: border-top 0.3s ease;
-            border-top: 5px solid var(--secondary-color);
-        }
-        .login-container h2 {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            border-bottom: none;
-        }
-        /* ดีไซน์ปุ่มสลับโหมด (Tabs) */
-        .role-selector {
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f4f6f9;
             display: flex;
-            margin-bottom: 1.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            overflow: hidden;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
         }
-        .role-selector button {
+        .login-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-top: 5px solid #0056b3;
+            transition: border-color 0.3s ease;
+        }
+        .tab-group {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab-btn {
             flex: 1;
-            background-color: transparent;
-            color: var(--text-main);
-            border-radius: 0;
-            padding: 0.6rem;
-            font-size: 0.95rem;
+            padding: 10px;
+            border: none;
+            background: none;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s;
         }
-        .role-selector button.active {
-            background-color: var(--secondary-color);
+        .tab-btn.active {
+            color: #0056b3;
+            border-bottom: 3px solid #0056b3;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background-color: #0056b3;
             color: white;
-            pointer-events: none;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+            margin-top: 10px;
         }
-        .role-selector button#btnAdmin.active {
-            background-color: #dc3545; /* สีแดงสำหรับแท็บแอดมิน */
+        .btn-submit:hover {
+            opacity: 0.9;
         }
-        #errorMsg { color: red; text-align: center; margin-top: 1rem; font-weight: 500; }
+        .error-msg {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        .register-link {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .register-link a {
+            color: #0056b3;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .register-link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-    <header>
-        <h1>ระบบแจ้งซ่อมคอมพิวเตอร์</h1>
-    </header>
-    
-    <main>
-        <div class="login-container" id="loginBox">
-            <h2 id="loginTitle">เข้าสู่ระบบ (ผู้ใช้ทั่วไป)</h2>
-            
-            <!-- ส่วนเลือกโหมดล็อคอิน -->
-            <div class="role-selector">
-                <button type="button" id="btnUser" class="active">ผู้ใช้งานทั่วไป</button>
-                <button type="button" id="btnAdmin">ผู้ดูแลระบบ</button>
+
+    <div class="login-card" id="loginBox">
+        <!-- ปุ่มสลับโหมด ผู้ใช้ทั่วไป / ผู้ดูแลระบบ -->
+        <div class="tab-group">
+            <button type="button" class="tab-btn active" id="btnUser">ผู้ใช้ทั่วไป</button>
+            <button type="button" class="tab-btn" id="btnAdmin">ผู้ดูแลระบบ</button>
+        </div>
+
+        <h2 id="loginTitle" style="text-align: center; margin-bottom: 20px; color: #333;">เข้าสู่ระบบ (ผู้ใช้ทั่วไป)</h2>
+
+        <!-- ฟอร์มเข้าสู่ระบบ -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">ชื่อผู้ใช้งาน:</label>
+                <input type="text" id="username" required placeholder="กรอกชื่อผู้ใช้งาน">
             </div>
 
-            <form id="loginForm">
-                <div>
-                    <label for="username">ชื่อผู้ใช้งาน:</label>
-                    <input type="text" id="username" required placeholder="กรอกชื่อผู้ใช้งาน">
-                </div>
-                <div>
-                    <label for="password">รหัสผ่าน:</label>
-                    <input type="password" id="password" required placeholder="กรอกรหัสผ่าน">
-                </div>
-                <button type="submit" id="submitBtn" style="width: 100%; margin-top: 1rem;">ล็อคอิน</button>
-            </form>
-            <p id="errorMsg"></p>
+            <div class="form-group">
+                <label for="password">รหัสผ่าน:</label>
+                <input type="password" id="password" required placeholder="กรอกรหัสผ่าน">
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">เข้าสู่ระบบ</button>
+        </form>
+
+        <!-- ข้อความแสดงผลลัพธ์/ข้อผิดพลาด -->
+        <div id="errorMsg" class="error-msg"></div>
+
+        <!-- ลิงก์สำหรับผู้ใช้งานใหม่ไปสมัครสมาชิก -->
+        <div class="register-link">
+            ยังไม่มีบัญชีผู้ใช้งาน? <a href="register.html">สมัครสมาชิกที่นี่</a>
         </div>
-    </main>
+    </div>
+
+    <!-- เรียกใช้ไฟล์สคริปต์ login.js -->
     <script src="login.js"></script>
 </body>
 </html>

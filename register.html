@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>สมัครสมาชิก - ระบบแจ้งซ่อม</title>
+    <link rel="stylesheet" href="style.css"> <!-- ใช้ไฟล์ CSS เดิมของคุณ -->
+</head>
+<body>
+    <div class="login-container">
+        <h2>สมัครสมาชิกใหม่</h2>
+        <form id="registerForm">
+            <div class="input-group">
+                <label>ชื่อผู้ใช้งาน (Username / อีเมล):</label>
+                <input type="text" id="regUsername" required>
+            </div>
+            <div class="input-group">
+                <label>รหัสผ่าน (Password):</label>
+                <input type="password" id="regPassword" required>
+            </div>
+            <!-- กำหนดสิทธิ์ให้เป็น user ธรรมดาอัตโนมัติ -->
+            <input type="hidden" id="regRole" value="user">
+            
+            <button type="submit" class="btn-login">ยืนยันการสมัครสมาชิก</button>
+        </form>
+        <p style="text-align: center; margin-top: 10px;">
+            <a href="login.html">กลับไปหน้าเข้าสู่ระบบ</a>
+        </p>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const role = document.getElementById('regRole').value;
+
+            try {
+                // ยิง API ไปที่ Backend บน Render ที่เราเคยทำไว้ (/api/register)
+                const response = await fetch('https://repair-system-backend-o7wo.onrender.com/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, role })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('✅ สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
+                    window.location.href = 'login.html'; // เด้งกลับไปหน้าล็อกอิน
+                } else {
+                    alert('❌ สมัครไม่สำเร็จ: ' + data.error);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+            }
+        });
+    </script>
+</body>
+</html>
