@@ -16,7 +16,7 @@ const SECRET_KEY = process.env.JWT_SECRET || 'my_super_secret_key_123';
 // ==========================================
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // คาดหวังรูปแบบ "Bearer TOKEN"
+    const token = authHeader && authHeader.split(' ')[1]; 
 
     if (token == null) return res.status(401).json({ error: 'ไม่พบ Token กรุณาเข้าสู่ระบบ' });
 
@@ -28,7 +28,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 // ==========================================
-// 1. API สมัครสมาชิก (Register) - ไม่ต้องใช้ Token
+// 1. API สมัครสมาชิก (Register)
 // ==========================================
 app.post('/api/register', async (req, res) => {
     const { username, password, role } = req.body;
@@ -44,7 +44,7 @@ app.post('/api/register', async (req, res) => {
 });
 
 // ==========================================
-// 2. API เข้าสู่ระบบ (Login) - ไม่ต้องใช้ Token
+// 2. API เข้าสู่ระบบ (Login)
 // ==========================================
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
@@ -66,11 +66,10 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
-// 3. API สถิติการแจ้งซ่อม (ต้องมี Token)
+// 3. API สถิติการแจ้งซ่อม 
 // ==========================================
 const getStatsHandler = async (req, res) => {
     try {
-        // ใช้ ` (Backtick) ครอบคำสั่ง SQL และใช้ ' (Single Quote) ครอบข้อความ
         const [total] = await db.execute(`SELECT COUNT(*) as count FROM repairs`);
         const [pending] = await db.execute(`SELECT COUNT(*) as count FROM repairs WHERE status = 'pending'`);
         const [completed] = await db.execute(`SELECT COUNT(*) as count FROM repairs WHERE status = 'resolved' OR status = 'completed'`);
@@ -90,7 +89,7 @@ app.get('/api/tickets/stats', authenticateToken, getStatsHandler);
 app.get('/api/dashboard/stats', authenticateToken, getStatsHandler);
 
 // ==========================================
-// 4. API ดึงรายการใบแจ้งซ่อมทั้งหมด (ต้องมี Token)
+// 4. API ดึงรายการใบแจ้งซ่อมทั้งหมด (แก้ไขคอลัมน์แล้ว)
 // ==========================================
 const getTicketsHandler = async (req, res) => {
     try {
@@ -100,7 +99,7 @@ const getTicketsHandler = async (req, res) => {
                    r.status, 
                    r.created_at, 
                    u.username AS reporter, 
-                   r.equipment_code 
+                   r.device_name AS equipment_code 
             FROM repairs r
             LEFT JOIN users u ON r.user_id = u.id
             ORDER BY r.id DESC
@@ -117,7 +116,7 @@ app.get('/api/tickets', authenticateToken, getTicketsHandler);
 app.get('/api/repairs', authenticateToken, getTicketsHandler);
 
 // ==========================================
-// 5. API สร้างใบแจ้งซ่อมใหม่ (ต้องมี Token)
+// 5. API สร้างใบแจ้งซ่อมใหม่ (แก้ไขคอลัมน์แล้ว)
 // ==========================================
 const createTicketHandler = async (req, res) => {
     const { equipment_code, device_name, issue_description, description, user_id = null } = req.body;
@@ -130,14 +129,13 @@ const createTicketHandler = async (req, res) => {
     }
 
     try {
-        // อัปเดตชื่อคอลัมน์ให้ตรงกับฐานข้อมูล: equipment_code และ problem_desc
-        const sql = `INSERT INTO repairs (user_id, equipment_code, problem_desc, status) VALUES (?, ?, ?, 'pending')`;
+        const sql = `INSERT INTO repairs (user_id, device_name, problem_desc, status) VALUES (?, ?, ?, 'pending')`;
         await db.execute(sql, [user_id, device, desc]);
         
         res.status(201).json({ message: 'บันทึกข้อมูลแจ้งซ่อมสำเร็จ' });
     } catch (error) {
         console.error('Create Ticket Error:', error);
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกข้อมูลแจ้งซ่อม' });
+        res.status(500).json({ error: error.message });
     }
 };
 
@@ -145,7 +143,7 @@ app.post('/api/tickets', authenticateToken, createTicketHandler);
 app.post('/api/repairs', authenticateToken, createTicketHandler);
 
 // ==========================================
-// 6. API อัปเดตและลบใบแจ้งซ่อม (ต้องมี Token)
+// 6. API อัปเดตและลบใบแจ้งซ่อม
 // ==========================================
 app.put('/api/tickets/:id/status', authenticateToken, async (req, res) => {
     const ticketId = req.params.id; 
@@ -170,7 +168,7 @@ app.delete('/api/tickets/:id', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
-// 7. API จัดการผู้ใช้ (ต้องมี Token)
+// 7. API จัดการผู้ใช้
 // ==========================================
 app.get('/api/users', authenticateToken, async (req, res) => {
     try {
