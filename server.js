@@ -12,7 +12,23 @@ app.use(express.json());
 const SECRET_KEY = process.env.JWT_SECRET || 'my_super_secret_key_123';
 
 // ==========================================
-// 1. API สมัครสมาชิก (Register)
+// Middleware: ด่านตรวจ Token ความปลอดภัย
+// ==========================================
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // คาดหวังรูปแบบ "Bearer TOKEN"
+
+    if (token == null) return res.status(401).json({ error: 'ไม่พบ Token กรุณาเข้าสู่ระบบ' });
+
+    jwt.verify(token, SECRET_KEY, (err, user) => {
+        if (err) return res.status(403).json({ error: 'Token ไม่ถูกต้องหรือหมดอายุ' });
+        req.user = user;
+        next();
+    });
+};
+
+// ==========================================
+// 1. API สมัครสมาชิก (Register) - ไม่ต้องใช้ Token
 // ==========================================
 app.post('/api/register', async (req, res) => {
     const { username, password, role } = req.body;
@@ -28,7 +44,7 @@ app.post('/api/register', async (req, res) => {
 });
 
 // ==========================================
-// 2. API เข้าสู่ระบบ (Login)
+// 2. API เข้าสู่ระบบ (Login) - ไม่ต้องใช้ Token
 // ==========================================
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
@@ -50,13 +66,13 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ==========================================
-// 3. API สถิติการแจ้งซ่อม (ดึงจากตาราง repairs)
+// 3. API สถิติการแจ้งซ่อม (ต้องมี Token)
 // ==========================================
 const getStatsHandler = async (req, res) => {
     try {
         const [total] = await db.execute('SELECT COUNT(*) as count FROM repairs');
         const [pending] = await db.execute('SELECT COUNT(*) as count FROM repairs WHERE status = "pending"');
-        const [completed] = await db.execute('SELECT COUNT(*) as count FROM repairs WHERE status = "completed"');
+        const [completed] = await db.execute('SELECT COUNT(*) as count FROM repairs WHERE status = "resolved" OR status = "completed"');
         
         res.json({ 
             total: total[0].count || 0, 
@@ -69,17 +85,17 @@ const getStatsHandler = async (req, res) => {
     }
 };
 
-app.get('/api/tickets/stats', getStatsHandler);
-app.get('/api/dashboard/stats', getStatsHandler);
+app.get('/api/tickets/stats', authenticateToken, getStatsHandler);
+app.get('/api/dashboard/stats', authenticateToken, getStatsHandler);
 
 // ==========================================
-// 4. API ดึงรายการใบแจ้งซ่อมทั้งหมด (ดึงจากตาราง repairs)
+// 4. API ดึงรายการใบแจ้งซ่อมทั้งหมด (ต้องมี Token)
 // ==========================================
 const getTicketsHandler = async (req, res) => {
     try {
         const sql = `
             SELECT r.id, 
-                   COALESCE(r.description, r.issue_description) AS issue_description, 
+                   COALESCE(r.description, r.problem_desc) AS issue_description, 
                    r.status, 
                    r.created_at, 
                    u.username AS reporter, 
@@ -96,11 +112,11 @@ const getTicketsHandler = async (req, res) => {
     }
 };
 
-app.get('/api/tickets', getTicketsHandler);
-app.get('/api/repairs', getTicketsHandler);
+app.get('/api/tickets', authenticateToken, getTicketsHandler);
+app.get('/api/repairs', authenticateToken, getTicketsHandler);
 
 // ==========================================
-// 5. API สร้างใบแจ้งซ่อมใหม่ (บันทึกลงตาราง repairs)
+// 5. API สร้างใบแจ้งซ่อมใหม่ (ต้องมี Token)
 // ==========================================
 const createTicketHandler = async (req, res) => {
     const { equipment_code, device_name, issue_description, description, user_id = null } = req.body;
@@ -123,16 +139,15 @@ const createTicketHandler = async (req, res) => {
     }
 };
 
-app.post('/api/tickets', createTicketHandler);
-app.post('/api/repairs', createTicketHandler);
+app.post('/api/tickets', authenticateToken, createTicketHandler);
+app.post('/api/repairs', authenticateToken, createTicketHandler);
 
 // ==========================================
-// 6. API อัปเดตสถานะใบแจ้งซ่อม (UPDATE ตาราง repairs)
+// 6. API อัปเดตและลบใบแจ้งซ่อม (ต้องมี Token)
 // ==========================================
-app.put('/api/tickets/:id/status', async (req, res) => {
+app.put('/api/tickets/:id/status', authenticateToken, async (req, res) => {
     const ticketId = req.params.id; 
     const { status } = req.body;    
-
     try {
         const sql = `UPDATE repairs SET status = ? WHERE id = ?`;
         await db.execute(sql, [status, ticketId]);
@@ -143,45 +158,37 @@ app.put('/api/tickets/:id/status', async (req, res) => {
     }
 });
 
-// ==========================================
-// 7. API ลบใบแจ้งซ่อม (DELETE จากตาราง repairs)
-// ==========================================
-app.delete('/api/tickets/:id', async (req, res) => {
+app.delete('/api/tickets/:id', authenticateToken, async (req, res) => {
     try {
         await db.execute('DELETE FROM repairs WHERE id = ?', [req.params.id]);
         res.json({ message: 'ลบข้อมูลสำเร็จ' });
     } catch (err) { 
-        console.error('Delete Ticket Error:', err);
         res.status(500).json({ error: err.message }); 
     }
 });
 
 // ==========================================
-// 8. API จัดการผู้ใช้ (Users Management)
+// 7. API จัดการผู้ใช้ (ต้องมี Token)
 // ==========================================
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', authenticateToken, async (req, res) => {
     try {
         const [users] = await db.execute('SELECT id, username, role FROM users');
         res.json(users);
     } catch (err) { 
-        console.error('Get Users Error:', err);
         res.status(500).json({ error: err.message }); 
     }
 });
 
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', authenticateToken, async (req, res) => {
     try {
         await db.execute('DELETE FROM users WHERE id = ?', [req.params.id]);
         res.json({ message: 'ลบผู้ใช้สำเร็จ' });
     } catch (err) { 
-        console.error('Delete User Error:', err);
         res.status(500).json({ error: err.message }); 
     }
 });
 
-// ==========================================
 // Start Server
-// ==========================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`=========================================`);
