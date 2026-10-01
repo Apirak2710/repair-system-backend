@@ -1,5 +1,5 @@
-// 1. กำหนด URL หลักของ Backend บน Render (เปลี่ยนชื่อโดเมนให้ตรงกับ Web Service บน Render ของคุณ)
-const BASE_URL = 'https://repair-system-backend.onrender.com/api';
+const API_URL = 'https://repair-system-backend-o7wo.onrender.com/api/tickets';
+const STATS_URL = 'https://repair-system-backend-o7wo.onrender.com/api/dashboard/stats';
 
 // ==========================================
 // ระบบความปลอดภัย (เช็ค Token)
@@ -11,56 +11,69 @@ if (!token) {
 }
 
 // ==========================================
-// 1. ฟังก์ชันดึงสถิติตัวเลข Dashboard
+// 1. ฟังก์ชันดึงข้อมูลสถิติ
 // ==========================================
-async function fetchStats() {
-    const statsContainer = document.getElementById('stats-container');
-    if (!statsContainer) return;
-
+async function loadStats() {
     try {
-        const response = await fetch(`${BASE_URL}/tickets/stats`);
-        if (!response.ok) throw new Error('ไม่สามารถดึงสถิติได้');
+        const res = await fetch(STATS_URL, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}` 
+            }
+        });
         
-        const data = await response.json();
-        statsContainer.innerHTML = `
-            <div style="display: flex; gap: 15px; margin-top: 10px;">
-                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
-                    <h3 style="margin:0; color:#0d47a1;">รายการทั้งหมด</h3>
-                    <p style="font-size: 24px; font-weight: bold; margin: 5px 0 0 0;">${data.total || 0}</p>
+        if (!res.ok) throw new Error('ดึงข้อมูลสถิติไม่ได้');
+        const data = await res.json();
+        
+        const statsContainer = document.getElementById('stats-container');
+        if (statsContainer) {
+            statsContainer.innerHTML = `
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                        <h3 style="margin: 0; color: #1565c0;">${data.total}</h3>
+                        <p style="margin: 5px 0 0; font-size: 14px;">แจ้งซ่อมทั้งหมด</p>
+                    </div>
+                    <div style="background: #fff3e0; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                        <h3 style="margin: 0; color: #e65100;">${data.pending}</h3>
+                        <p style="margin: 5px 0 0; font-size: 14px;">รอดำเนินการ</p>
+                    </div>
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                        <h3 style="margin: 0; color: #2e7d32;">${data.completed}</h3>
+                        <p style="margin: 5px 0 0; font-size: 14px;">ซ่อมเสร็จสิ้น</p>
+                    </div>
                 </div>
-                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
-                    <h3 style="margin:0; color:#e65100;">รอดำเนินการ</h3>
-                    <p style="font-size: 24px; font-weight: bold; margin: 5px 0 0 0;">${data.pending || 0}</p>
-                </div>
-                <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
-                    <h3 style="margin:0; color:#1b5e20;">เสร็จสิ้น</h3>
-                    <p style="font-size: 24px; font-weight: bold; margin: 5px 0 0 0;">${data.completed || 0}</p>
-                </div>
-            </div>
-        `;
-    } catch (error) {
-        console.error('Fetch Stats Error:', error);
-        statsContainer.innerText = 'ไม่สามารถดึงข้อมูลสถิติได้';
+            `;
+        }
+    } catch (err) {
+        console.error('Stats Error:', err);
+        const statsContainer = document.getElementById('stats-container');
+        if (statsContainer) statsContainer.innerText = `เกิดข้อผิดพลาดในการโหลดสถิติ`;
     }
 }
 
 // ==========================================
-// 2. ฟังก์ชันหลักสำหรับดึงข้อมูลและแสดงผลตาราง
+// 2. ฟังก์ชันดึงข้อมูลตารางแจ้งซ่อม
 // ==========================================
 async function fetchTickets() {
     try {
-        const response = await fetch(`${BASE_URL}/tickets`);
+        const response = await fetch(API_URL, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'ไม่สามารถดึงข้อมูลได้');
+            throw new Error(errorData.error || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
         }
         
         const tickets = await response.json();
         renderTable(tickets);
 
     } catch (error) {
-        console.error('Fetch Tickets Error:', error);
+        console.error('Error fetching tickets:', error);
         const tbody = document.querySelector('#ticketTable tbody') || document.querySelector('table tbody');
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:red;">${error.message}</td></tr>`;
@@ -77,7 +90,7 @@ function renderTable(tickets) {
 
     tbody.innerHTML = ''; 
 
-    if (!Array.isArray(tickets) || tickets.length === 0) {
+    if (tickets.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">ยังไม่มีรายการแจ้งซ่อม</td></tr>';
         return;
     }
@@ -87,8 +100,8 @@ function renderTable(tickets) {
         let statusColor = 'black';
         
         if (ticket.status === 'pending') { statusText = 'รอดำเนินการ'; statusColor = '#ff9800'; }
-        else if (ticket.status === 'in_progress' || ticket.status === 'in-progress') { statusText = 'กำลังซ่อม'; statusColor = '#2196f3'; }
-        else if (ticket.status === 'completed' || ticket.status === 'resolved') { statusText = 'ซ่อมเสร็จสิ้น'; statusColor = '#4caf50'; }
+        else if (ticket.status === 'in_progress') { statusText = 'กำลังซ่อม'; statusColor = '#2196f3'; }
+        else if (ticket.status === 'resolved' || ticket.status === 'completed') { statusText = 'ซ่อมเสร็จสิ้น'; statusColor = '#4caf50'; }
         else if (ticket.status === 'cancelled') { statusText = 'ยกเลิก'; statusColor = '#f44336'; }
 
         const tr = document.createElement('tr');
@@ -97,44 +110,14 @@ function renderTable(tickets) {
         tr.innerHTML = `
             <td data-label="รหัสอุปกรณ์"><b>${ticket.equipment_code || 'ไม่ระบุ'}</b></td>
             <td data-label="สถานะ" style="color: ${statusColor}; font-weight: bold;">${statusText}</td>
-            <td data-label="จัดการ"><button class="btn-update" style="display:none;">อัปเดตสถานะ</button><span style="color: #999; font-size: 0.9em;">(ระบบออนไลน์)</span></td>
+            <td data-label="จัดการ"><span style="color: #999; font-size: 0.9em;">(ดูสถานะออนไลน์)</span></td>
         `;
         tbody.appendChild(tr);
     });
 }
 
 // ==========================================
-// 4. ระบบค้นหา (Search)
-// ==========================================
-function debounce(func, delay) {
-    let timeoutId;
-    return function (...args) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            func.apply(this, args);
-        }, delay);
-    };
-}
-
-const searchInput = document.getElementById('searchInput');
-if (searchInput) {
-    searchInput.addEventListener('input', debounce((event) => {
-        const searchTerm = event.target.value.toLowerCase();
-        const rows = document.querySelectorAll('#ticketTable tbody tr');
-        
-        rows.forEach(row => {
-            const eqCode = row.querySelector('td').textContent.toLowerCase();
-            if (eqCode.includes(searchTerm)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }, 300));
-}
-
-// ==========================================
-// 5. ฟังก์ชันเมื่อผู้ใช้กดปุ่ม "ส่งแจ้งซ่อม"
+// 4. ฟังก์ชันส่งฟอร์มแจ้งซ่อม
 // ==========================================
 const ticketForm = document.getElementById('ticketForm');
 if (ticketForm) {
@@ -144,7 +127,7 @@ if (ticketForm) {
         const eqCode = document.getElementById('eqCode').value;
         const issue = document.getElementById('issue').value;
         
-        let userId = 1;
+        let userId = null; 
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
             userId = payload.id;
@@ -153,9 +136,12 @@ if (ticketForm) {
         }
 
         try {
-            const response = await fetch(`${BASE_URL}/tickets`, {
+            const response = await fetch(API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
                 body: JSON.stringify({
                     equipment_code: eqCode,
                     issue_description: issue,
@@ -166,10 +152,10 @@ if (ticketForm) {
             const data = await response.json();
 
             if (response.ok) {
-                alert('✅ ส่งข้อมูลแจ้งซ่อมสำเร็จ ระบบได้รับเรื่องแล้ว!');
+                alert('✅ ส่งข้อมูลแจ้งซ่อมสำเร็จ!');
                 ticketForm.reset(); 
-                fetchStats();
-                fetchTickets();
+                fetchTickets(); // โหลดตารางใหม่
+                loadStats(); // อัปเดตสถิติใหม่
             } else {
                 alert('❌ เกิดข้อผิดพลาด: ' + data.error);
             }
@@ -180,8 +166,8 @@ if (ticketForm) {
     });
 }
 
-// เริ่มต้นทำงานทันทีที่โหลดหน้าเว็บเสร็จ
+// เริ่มต้นทำงานดึงข้อมูลทั้งคู่เมื่อเปิดหน้าเว็บ
 document.addEventListener('DOMContentLoaded', () => {
-    fetchStats();
     fetchTickets();
+    loadStats();
 });
