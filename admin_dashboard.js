@@ -1,213 +1,183 @@
-// 1. ตรวจสอบความปลอดภัย (Security Check) ว่าเป็น Admin จริงไหม
-const userRole = localStorage.getItem('role');
+// URL ของ Backend บน Render
+const BASE_URL = 'https://repair-system-backend-o7wo.onrender.com/api';
+
+// ดึง Token จากระบบ
 const token = localStorage.getItem('token');
 
-// ถ้าไม่มีตั๋ว หรือไม่ใช่แอดมิน ให้เตะกลับไปหน้าล็อคอินทันที
-if (!token || (userRole !== 'admin' && userRole !== 'technician')) {
-    alert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้!');
+// ==========================================
+// 1. ตรวจสอบสิทธิ์การเข้าใช้งาน
+// ==========================================
+if (!token) {
+    alert('กรุณาเข้าสู่ระบบก่อนใช้งาน');
     window.location.href = 'login.html';
 }
 
-// 2. ฟังก์ชันดึงข้อมูลมาแสดงในตาราง
-async function fetchAdminTickets() {
+// ตั้งค่า Headers สำหรับการส่ง Request (เพิ่ม Token ยืนยันตัวตน)
+const authHeaders = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+};
+
+// ==========================================
+// 2. ฟังก์ชันดึงข้อมูลสถิติ (Dashboard Stats)
+// ==========================================
+async function fetchStats() {
     try {
-        // เพิ่ม Headers แนบ Token ไปกับคำขอ
-        const response = await fetch('https://repair-system-backend-o7wo.onrender.com/api/tickets', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
+        const response = await fetch(`${BASE_URL}/dashboard/stats`, { 
+            method: 'GET', 
+            headers: authHeaders 
+        });
+        
+        if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลสถิติได้');
+        
+        const data = await response.json();
+        
+        // อัปเดตตัวเลขลงในหน้าเว็บ (ค้นหาจากข้อความในกล่อง)
+        const statsBoxes = document.querySelectorAll('.stat-box, .box, div'); // ปรับให้ครอบคลุม
+        statsBoxes.forEach(box => {
+            if (box.innerText.includes('แจ้งซ่อมทั้งหมด')) {
+                box.innerHTML = `<b>แจ้งซ่อมทั้งหมด:</b> ${data.total || 0} รายการ`;
+            }
+            if (box.innerText.includes('รอดำเนินการ')) {
+                box.innerHTML = `<b>รอดำเนินการ:</b> ${data.pending || 0} รายการ`;
             }
         });
+        
+    } catch (error) {
+        console.error('Stats Error:', error);
+    }
+}
 
-        if (!response.ok) throw new Error('ดึงข้อมูลไม่ได้');
+// ==========================================
+// 3. ฟังก์ชันดึงรายการแจ้งซ่อมทั้งหมด
+// ==========================================
+async function fetchAdminTickets() {
+    const tbody = document.querySelector('table tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">กำลังโหลดข้อมูล...</td></tr>';
+
+    try {
+        const response = await fetch(`${BASE_URL}/tickets`, { 
+            method: 'GET', 
+            headers: authHeaders 
+        });
+        
+        if (!response.ok) throw new Error('ไม่มีสิทธิ์ในการดึงข้อมูลหรือเซิร์ฟเวอร์มีปัญหา');
         
         const tickets = await response.json();
-        const tbody = document.querySelector('#adminTicketTable tbody');
-        tbody.innerHTML = ''; 
-
-        if (tickets.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ไม่มีรายการแจ้งซ่อม</td></tr>';
-            return;
-        }
-
-        tickets.forEach(ticket => {
-            const date = new Date(ticket.created_at).toLocaleString('th-TH');
-            const tr = document.createElement('tr');
-            
-            // สร้าง Dropdown เลือกสถานะ และเพิ่มปุ่มลบ
-            tr.innerHTML = `
-                <td data-label="รหัสอุปกรณ์"><b>${ticket.equipment_code || 'ไม่ระบุ'}</b></td>
-                <td data-label="ผู้แจ้ง">${ticket.reporter || 'ไม่ระบุ'}</td>
-                <td data-label="ปัญหาที่พบ">${ticket.issue_description || 'ไม่ระบุ'}</td>
-                <td data-label="วันที่แจ้ง">${date}</td>
-                <td data-label="อัปเดตสถานะ">
-                    <select class="status-select" id="status-${ticket.id}">
-                        <option value="pending" ${ticket.status === 'pending' ? 'selected' : ''}>รอดำเนินการ</option>
-                        <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}>กำลังซ่อม</option>
-                        <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}>ซ่อมเสร็จสิ้น</option>
-                        <option value="cancelled" ${ticket.status === 'cancelled' ? 'selected' : ''}>ยกเลิก</option>
-                    </select>
-                </td>
-                <td data-label="จัดการ">
-                    <button class="save-btn" onclick="updateTicketStatus(${ticket.id})">บันทึกสถานะ</button>
-                    <button class="delete-btn" data-id="${ticket.id}" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;">ลบ</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+        renderAdminTable(tickets);
     } catch (error) {
-        console.error('Fetch Admin Tickets Error:', error);
+        console.error('Tickets Error:', error);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">${error.message}</td></tr>`;
     }
 }
 
-// 3. ฟังก์ชันส่งข้อมูลการอัปเดตสถานะไปที่เซิร์ฟเวอร์
-async function updateTicketStatus(ticketId) {
-    const newStatus = document.getElementById(`status-${ticketId}`).value;
+// ==========================================
+// 4. ฟังก์ชันวาดตาราง และสร้างปุ่มจัดการ
+// ==========================================
+function renderAdminTable(tickets) {
+    const tbody = document.querySelector('table tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = ''; 
 
+    if (tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ยังไม่มีรายการแจ้งซ่อม</td></tr>';
+        return;
+    }
+
+    tickets.forEach(ticket => {
+        // จัดการวันที่ให้อ่านง่าย
+        const dateObj = new Date(ticket.created_at);
+        const formattedDate = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><b>${ticket.equipment_code || ticket.device_name || '-'}</b></td>
+            <td>${ticket.reporter || 'ผู้ใช้ทั่วไป'}</td>
+            <td>${ticket.issue_description || ticket.description || '-'}</td>
+            <td>${formattedDate}</td>
+            <td>
+                <select class="status-dropdown" onchange="updateTicketStatus(${ticket.id}, this.value)" style="padding: 5px; border-radius: 4px;">
+                    <option value="pending" ${ticket.status === 'pending' ? 'selected' : ''}>รอดำเนินการ</option>
+                    <option value="in-progress" ${(ticket.status === 'in-progress' || ticket.status === 'in_progress') ? 'selected' : ''}>กำลังซ่อม</option>
+                    <option value="completed" ${(ticket.status === 'completed' || ticket.status === 'resolved') ? 'selected' : ''}>เสร็จสิ้น</option>
+                    <option value="cancelled" ${ticket.status === 'cancelled' ? 'selected' : ''}>ยกเลิก</option>
+                </select>
+            </td>
+            <td>
+                <button onclick="deleteTicket(${ticket.id})" style="background: #f44336; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">ลบ</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ==========================================
+// 5. ฟังก์ชันอัปเดตสถานะ
+// ==========================================
+window.updateTicketStatus = async function(id, newStatus) {
     try {
-        // เพิ่ม Headers แนบ Token
-        const response = await fetch(`https://repair-system-backend-o7wo.onrender.com/api/tickets/${ticketId}/status`, {
+        const response = await fetch(`${BASE_URL}/tickets/${id}/status`, {
             method: 'PUT',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
+            headers: authHeaders,
             body: JSON.stringify({ status: newStatus })
         });
-
+        
         if (response.ok) {
-            alert('อัปเดตสถานะเรียบร้อยแล้ว!');
-            fetchAdminTickets(); // รีเฟรชตารางใหม่
-            loadStats(); // อัปเดตตัวเลขสถิติใหม่ด้วย
+            alert('อัปเดตสถานะสำเร็จ');
+            fetchStats(); // อัปเดตสถิติหลังเปลี่ยนสถานะ
         } else {
-            alert('เกิดข้อผิดพลาดในการบันทึก');
+            alert('ไม่สามารถอัปเดตสถานะได้');
         }
     } catch (error) {
         console.error(error);
-        alert('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     }
-}
-
-// 4. ฟังก์ชันออกจากระบบ
-function logout() {
-    localStorage.clear(); // ลบตั๋ว (Token) ทิ้ง
-    window.location.href = 'login.html'; // เด้งกลับหน้าล็อคอิน
-}
-
-// สั่งให้โหลดตารางทันทีเมื่อเข้าหน้านี้
-fetchAdminTickets();
+};
 
 // ==========================================
-// ระบบเพิ่มผู้ใช้งานใหม่โดย Admin
+// 6. ฟังก์ชันลบรายการแจ้งซ่อม
 // ==========================================
-document.getElementById('addUserForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); 
-
-    const username = document.getElementById('newUsername').value;
-    const password = document.getElementById('newPassword').value;
-    const role = document.getElementById('newRole').value;
-    const msgObj = document.getElementById('addUserMsg');
-
-    msgObj.style.color = '#0056b3';
-    msgObj.innerText = 'กำลังบันทึกข้อมูลเข้าฐานข้อมูล...';
+window.deleteTicket = async function(id) {
+    if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการแจ้งซ่อมนี้?')) return;
 
     try {
-        const response = await fetch('https://repair-system-backend-o7wo.onrender.com/api/register', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json' 
-                // ไม่ต้องแนบ Token เพราะ API สมัครสมาชิกเปิดสาธารณะ
-            },
-            body: JSON.stringify({ username, password, role })
+        const response = await fetch(`${BASE_URL}/tickets/${id}`, {
+            method: 'DELETE',
+            headers: authHeaders
         });
-
-        const data = await response.json();
-
+        
         if (response.ok) {
-            msgObj.style.color = 'green';
-            msgObj.innerText = `✅ สำเร็จ! สร้างบัญชี "${username}" เรียบร้อยแล้ว`;
-            document.getElementById('addUserForm').reset(); 
-            
-            setTimeout(() => { msgObj.innerText = ''; }, 3000);
+            alert('ลบรายการสำเร็จ');
+            fetchAdminTickets(); // โหลดตารางใหม่
+            fetchStats(); // อัปเดตสถิติใหม่
         } else {
-            msgObj.style.color = 'red';
-            msgObj.innerText = '❌ ' + data.error; 
+            alert('ไม่สามารถลบรายการได้');
         }
     } catch (error) {
         console.error(error);
-        msgObj.style.color = 'red';
-        msgObj.innerText = '❌ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
     }
-});
+};
 
-// =========================================================
-// 1. ระบบ Dashboard Stats (ดึงสถิติมาแสดง)
-// =========================================================
-async function loadStats() {
-    try {
-        // เพิ่ม Headers แนบ Token
-        const res = await fetch('https://repair-system-backend-o7wo.onrender.com/api/dashboard/stats', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            }
+// ==========================================
+// 7. ฟังก์ชันค้นหา
+// ==========================================
+const searchInput = document.querySelector('input[placeholder*="ค้นหา"]');
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('table tbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(term) ? '' : 'none';
         });
-        
-        if (!res.ok) throw new Error('ดึงข้อมูลสถิติไม่ได้');
-        
-        const data = await res.json();
-        document.getElementById('statTotal').innerText = data.total || 0;
-        document.getElementById('statPending').innerText = data.pending || 0;
-    } catch (error) {
-        console.error('Load Stats Error:', error);
-    }
+    });
 }
-loadStats();
 
-// =========================================================
-// 2. การใช้ Debounce (ลดการยิง API ซ้ำๆ เวลาผู้ใช้พิมพ์ค้นหา)
-// =========================================================
-function debounce(func, delay) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
-    };
-}
-document.getElementById('searchInput').addEventListener('input', debounce((e) => {
-    console.log("กำลังค้นหา: ", e.target.value);
-    // (สามารถใส่โค้ดฟิลเตอร์ตารางตรงนี้ได้ในอนาคต)
-}, 500)); 
-
-// =========================================================
-// 3. การใช้ Event Delegation (รับ Event จากตัวแม่คือ Table)
-// =========================================================
-document.getElementById('adminTicketTable').addEventListener('click', async (e) => {
-    if (e.target.classList.contains('delete-btn')) {
-        const ticketId = e.target.getAttribute('data-id');
-        if (confirm('คุณแน่ใจหรือไม่ที่จะลบรายการนี้?')) {
-            try {
-                // เพิ่ม Headers แนบ Token
-                const response = await fetch(`https://repair-system-backend-o7wo.onrender.com/api/tickets/${ticketId}`, { 
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}` 
-                    }
-                });
-
-                if (response.ok) {
-                    alert('ลบข้อมูลสำเร็จ');
-                    fetchAdminTickets(); 
-                    loadStats(); 
-                } else {
-                    alert('เกิดข้อผิดพลาดในการลบข้อมูล');
-                }
-            } catch (error) {
-                console.error('Delete Ticket Error:', error);
-                alert('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
-            }
-        }
-    }
+// ==========================================
+// เริ่มทำงานเมื่อเปิดหน้าเว็บ
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    fetchStats();
+    fetchAdminTickets();
 });
