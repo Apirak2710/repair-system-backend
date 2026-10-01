@@ -70,9 +70,10 @@ app.post('/api/login', async (req, res) => {
 // ==========================================
 const getStatsHandler = async (req, res) => {
     try {
-        const [total] = await db.execute('SELECT COUNT(*) as count FROM repairs');
-        const [pending] = await db.execute('SELECT COUNT(*) as count FROM repairs WHERE status = "pending"');
-        const [completed] = await db.execute('SELECT COUNT(*) as count FROM repairs WHERE status = "resolved" OR status = "completed"');
+        // ใช้ ` (Backtick) ครอบคำสั่ง SQL และใช้ ' (Single Quote) ครอบข้อความ
+        const [total] = await db.execute(`SELECT COUNT(*) as count FROM repairs`);
+        const [pending] = await db.execute(`SELECT COUNT(*) as count FROM repairs WHERE status = 'pending'`);
+        const [completed] = await db.execute(`SELECT COUNT(*) as count FROM repairs WHERE status = 'resolved' OR status = 'completed'`);
         
         res.json({ 
             total: total[0].count || 0, 
