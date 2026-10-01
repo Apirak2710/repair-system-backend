@@ -94,13 +94,14 @@ app.get('/api/dashboard/stats', authenticateToken, getStatsHandler);
 // ==========================================
 const getTicketsHandler = async (req, res) => {
     try {
+        // แก้ไข SQL: ดึงเฉพาะคอลัมน์ที่มีอยู่จริง และเปลี่ยนชื่อ (AS) ให้ตรงกับที่ Frontend ต้องการ
         const sql = `
             SELECT r.id, 
-                   COALESCE(r.description, r.problem_desc) AS issue_description, 
+                   r.description AS issue_description, 
                    r.status, 
                    r.created_at, 
                    u.username AS reporter, 
-                   COALESCE(r.device_name, r.equipment_code) AS equipment_code 
+                   r.device_name AS equipment_code 
             FROM repairs r
             LEFT JOIN users u ON r.user_id = u.id
             ORDER BY r.id DESC
@@ -109,9 +110,13 @@ const getTicketsHandler = async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Fetch Tickets Error:', error);
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูลใบแจ้งซ่อม' });
+        // เปลี่ยนเป็น error.message เผื่อมีปัญหาอื่น เราจะได้เห็น Error ของจริงบนหน้าเว็บ
+        res.status(500).json({ error: error.message });
     }
 };
+
+app.get('/api/tickets', authenticateToken, getTicketsHandler);
+app.get('/api/repairs', authenticateToken, getTicketsHandler);
 
 app.get('/api/tickets', authenticateToken, getTicketsHandler);
 app.get('/api/repairs', authenticateToken, getTicketsHandler);
