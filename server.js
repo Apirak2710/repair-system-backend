@@ -94,14 +94,13 @@ app.get('/api/dashboard/stats', authenticateToken, getStatsHandler);
 // ==========================================
 const getTicketsHandler = async (req, res) => {
     try {
-        // แก้ไข SQL: ดึงเฉพาะคอลัมน์ที่มีอยู่จริง และเปลี่ยนชื่อ (AS) ให้ตรงกับที่ Frontend ต้องการ
         const sql = `
             SELECT r.id, 
-                   r.description AS issue_description, 
+                   r.problem_desc AS issue_description, 
                    r.status, 
                    r.created_at, 
                    u.username AS reporter, 
-                   r.device_name AS equipment_code 
+                   r.equipment_code 
             FROM repairs r
             LEFT JOIN users u ON r.user_id = u.id
             ORDER BY r.id DESC
@@ -110,13 +109,9 @@ const getTicketsHandler = async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Fetch Tickets Error:', error);
-        // เปลี่ยนเป็น error.message เผื่อมีปัญหาอื่น เราจะได้เห็น Error ของจริงบนหน้าเว็บ
         res.status(500).json({ error: error.message });
     }
 };
-
-app.get('/api/tickets', authenticateToken, getTicketsHandler);
-app.get('/api/repairs', authenticateToken, getTicketsHandler);
 
 app.get('/api/tickets', authenticateToken, getTicketsHandler);
 app.get('/api/repairs', authenticateToken, getTicketsHandler);
@@ -135,7 +130,8 @@ const createTicketHandler = async (req, res) => {
     }
 
     try {
-        const sql = `INSERT INTO repairs (user_id, device_name, description, status) VALUES (?, ?, ?, 'pending')`;
+        // อัปเดตชื่อคอลัมน์ให้ตรงกับฐานข้อมูล: equipment_code และ problem_desc
+        const sql = `INSERT INTO repairs (user_id, equipment_code, problem_desc, status) VALUES (?, ?, ?, 'pending')`;
         await db.execute(sql, [user_id, device, desc]);
         
         res.status(201).json({ message: 'บันทึกข้อมูลแจ้งซ่อมสำเร็จ' });
